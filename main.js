@@ -67,11 +67,14 @@ function off() {
   if (!info || !key) {
     return;
   }
-  let result = "";
   let code_info = []
   let minus = false;
   for (var i = 0; i < info.length; i++) {
     if (info[i] === ':') {
+      if (minus) {
+        code_info[code_info.length - 1] = -code_info[code_info.length - 1];
+        minus = false;
+      }
       code_info.push(0);
     } else {
       if (info[i] === '-') {
@@ -80,10 +83,6 @@ function off() {
       }
       code_info[code_info.length - 1] *= 10;
       code_info[code_info.length - 1] += Number(info[i]);
-      if (minus) {
-        code_info[code_info.length - 1] = -code_info[code_info.length - 1];
-        minus = false;
-      }
     }
   }
 
