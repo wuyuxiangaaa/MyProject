@@ -87,6 +87,7 @@ function off() {
     }
   }
 
+  const code_key = tocode(key);
   let result_arr = [];
   for (var i = 0; i < code_info.length; i++) {
     let result_code = code_info[i];
