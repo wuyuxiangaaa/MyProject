@@ -1,108 +1,143 @@
+#include <winsock2.h>
 #include <iostream>
-#include <WinSock2.h>
-using namespace std;
+#include <string>
 
-#pragma comment(lib, "WS2_32.lib")
-//è¡¨ç¤ºé“¾æ¥WS2_32.libè¿™ä¸ªåº“ã€‚
-#define PORT 1024
+using namespace std;
 
 int main()
 {
-    SOCKET sock_server, newsock;
+    WORD wVersionRequested = MAKEWORD(2, 2);
     struct sockaddr_in server_addr, client_addr;
-    char msg[] = {"Hello client"};
-    // åˆå§‹åŒ– winsock2.dll[12/27/2017 MagicScaring]
-    WSADATA wsaData;
-    WORD wVersionRequested = MAKEWORD(2, 2); //ç”Ÿæˆç‰ˆæœ¬å·
-    if (WSAStartup(wVersionRequested, &wsaData) != 0)
+    WSADATA WSAData;
+    SOCKET sock_server;
+    char msg[1000] = {"hello!"};
+
+    int result = WSAStartup(wVersionRequested, &WSAData);
+    if (result != 0)
     {
-        cout << "åŠ è½½ winsock.dllå¤±è´¥" << endl;
+        switch (result)
+        {
+        case WSASYSNOTREADY:
+            cout << "WSAStartup: ÍøÂçÍ¨ĞÅÖĞÏÂ²ãµÄÍøÂç×ÓÏµÍ³Ã»×¼±¸ºÃ! " << endl;
+            break;
+        case WSAVERNOTSUPPORTED:
+            cout << "WSAStartup: SocketÊµÏÖÌá¹©°æ±¾ºÍsocketĞèÒªµÄ°æ±¾²»·û! " << endl;
+            break;
+        case WSAEINPROGRESS:
+            cout << "WSAStartup: Ò»¸ö×èÈûµÄSocket²Ù×÷ÕıÔÚ½øĞĞ! " << endl;
+            break;
+        case WSAEPROCLIM:
+            cout << "WSAStartup: SocketµÄÊµÏÖ³¬¹ıSocketÖ§³ÖµÄÈÎÎñÊıÏŞÖÆ! " << endl;
+            break;
+        case WSAEFAULT:
+            cout << "WSAStartup: lpWSAData²ÎÊı²»ÊÇÒ»¸öºÏ·¨µÄÖ¸Õë! " << endl;
+            break;
+        default:
+            cout << "WSAStartup: Unknown errors! " << endl;
+        }
+        getchar();
         return 0;
     }
-    // åˆ›å»ºå¥—æ¥å­— [12/27/2017 MagicScaring]
-    if ((sock_server = socket(AF_INET, SOCK_STREAM, 0)) == SOCKET_ERROR)
+
+    sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock_server == SOCKET_ERROR)
     {
-        cout << "åˆ›å»ºå¥—æ¥å­—å¤±è´¥! é”™è¯¯ä»£ç :" << WSAGetLastError() << endl;
-        WSACleanup(); //æ³¨é”€WinSockåŠ¨æ€é“¾æ¥åº“
+        cout << "socket: ´´½¨Ì×½Ó×ÖÊ§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
+        WSACleanup(); //×¢ÏúWinSock¶¯Ì¬Á´½Ó¿â
+        getchar();
         return 0;
     }
-    // å¡«å†™éœ€è¦ç»‘å®šçš„æœ¬åœ°åœ°å€ []
-    int addr_len = sizeof(struct sockaddr_in);
+
+    const int PORT = 8080;
+    const char IP[20] = {"127.0.0.1"};
+    int size_sockaddr_in = sizeof(struct sockaddr_in);
     memset((void *)&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if (bind(sock_server, (struct sockaddr *)&server_addr, addr_len) != 0)
+    server_addr.sin_addr.s_addr = inet_addr(IP);
+    result = bind(sock_server, (struct sockaddr *)&server_addr, size_sockaddr_in);
+    if (result != 0)
     {
-        cout << "ç»‘å®šå¤±è´¥!é”™è¯¯ä»£ç :" << WSAGetLastError() << endl;
-        closesocket(sock_server); //å…³é—­å·²è¿æ¥å¥—æ¥å­—
-        WSACleanup();             //æ³¨é”€WinSockåŠ¨æ€é“¾æ¥åº“
+        cout << "bind: °ó¶¨Ê§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
+        closesocket(sock_server); //¹Ø±ÕÒÑÁ¬½ÓÌ×½Ó×Ö
+        WSACleanup();             //×¢ÏúWinSock¶¯Ì¬Á´½Ó¿â
+        getchar();
         return 0;
     }
 
-    // å¼€å§‹ç›‘å¬ [12/27/2017 MagicScaring]
-    if (listen(sock_server, 0) != 0)
+    result = listen(sock_server, 0);
+    if (result != 0)
     {
-        cout << "listenè°ƒç”¨å¤±è´¥!é”™è¯¯ä»£ç :" << WSAGetLastError() << endl;
+        cout << "listen: ¼àÌıÊ§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
         closesocket(sock_server);
         WSACleanup();
+        getchar();
         return 0;
     }
-    else
-    {
-        cout << "listening...." << endl;
-    }
-    // å¾ªç¯:æ¥æ”¶è¿æ¥è¯·æ±‚å¹¶æ”¶å‘æ•°æ® [12/27/2017 MagicScaring]
-    int size;
+
+    cout << "Start listening... " << endl;
+
     while (true)
     {
-        if ((newsock = accept(sock_server, (struct sockaddr *)&client_addr, &addr_len)) == INVALID_SOCKET)
+        SOCKET newsock;
+        newsock = accept(sock_server, (struct sockaddr *)&client_addr, &size_sockaddr_in);
+        if (newsock != INVALID_SOCKET)
         {
-            cout << "accept å‡½æ•°è°ƒç”¨å¤±è´¥! é”™è¯¯ä»£ç :" << WSAGetLastError() << endl;
-            break;
+            cout << "accept: ½ÓÊÜÊ§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
+            closesocket(newsock);
+            closesocket(sock_server);
+            WSACleanup();
+            getchar();
+            return 0;
+        }
+        cout << "Succeed in accept a request! " << endl;
+        int size = send(sock_server, msg, sizeof(msg), 0);
+        if (size == -1)
+        {
+            cout << "send: ·¢ËÍĞÅÏ¢Ê§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
+            closesocket(newsock);
+            closesocket(sock_server);
+            WSACleanup();
+            continue;
+        }
+        else if (size == 0)
+        {
+            cout << "send: ¿Í»§¶ËÒÑ¹Ø±ÕÁ¬½Ó! " << endl;
+            closesocket(newsock);
+            closesocket(sock_server);
+            WSACleanup();
+            continue;
         }
         else
         {
-            cout << "æˆåŠŸæ¥æ”¶åˆ°ä¸€ä¸ªè¿æ¥è¯·æ±‚!" << endl;
-            size = send(newsock, msg, sizeof(msg), 0);
-            if (size == SOCKET_ERROR)
-            {
-                cout << "å‘é€ä¿¡æ¯å¤±è´¥! é”™è¯¯ä»£ç :" << WSAGetLastError() << endl;
-                closesocket(newsock);
-                continue;
-            }
-            else if (size == 0)
-            {
-                cout << "å¯¹æ–¹å·²å…³é—­è¿æ¥" << endl;
-                closesocket(newsock);
-                continue;
-            }
-            else
-            {
-                cout << "ä¿¡æ¯å‘é€æˆåŠŸ" << endl;
-            }
-            size = recv(newsock, msg, sizeof(msg), 0);
-            if (size == SOCKET_ERROR)
-            {
-                cout << "æ¥æ”¶ä¿¡æ¯å¤±è´¥ï¼ é”™è¯¯ä»£ç ï¼š" << WSAGetLastError() << endl;
-                closesocket(newsock);
-                WSACleanup();
-                return 0;
-            }
-            else if (size == 0)
-            {
-                cout << "å¯¹æ–¹å·²å…³é—­è¿æ¥" << endl;
-                closesocket(newsock);
-                WSACleanup();
-                return 0;
-            }
-            else
-            {
-                cout << "The message from Client:" << msg << endl;
-            }
+            cout << "send: ·¢ËÍÏûÏ¢³É¹¦! " << endl;
+        }
+
+        size = recv(sock_server, msg, sizeof(msg), 0);
+        if (size == SOCKET_ERROR)
+        {
+            cout << "recv: ½ÓÊÕÏûÏ¢Ê§°Ü! ´íÎó´úÂë: " << WSAGetLastError() << endl;
+            closesocket(newsock);
+            closesocket(sock_server);
+            WSACleanup();
+            getchar();
+            return 0;
+        }
+        else if (size == 0)
+        {
+            cout << "recv: ¿Í»§¶ËÒÑ¹Ø±ÕÁ¬½Ó! " << endl;
+            closesocket(newsock);
+            closesocket(sock_server);
+            WSACleanup();
+            getchar();
+            return 0;
+        }
+        else
+        {
+            cout << "recv: There is a message: " << msg << endl;
         }
     }
 
+    getchar();
     return 0;
 }
