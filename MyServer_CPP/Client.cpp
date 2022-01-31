@@ -119,7 +119,6 @@ int main()
             cout << "send: Succeed in send a message! " << endl;
         }
     }
-
     getchar();
     return 0;
 }
